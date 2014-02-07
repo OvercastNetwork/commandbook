@@ -210,7 +210,7 @@ public class OnlineListComponent extends BukkitComponent implements Listener {
                         out.append(", ");
                     }
 
-                    out.append(CommandBook.inst().useDisplayNames ? player.getDisplayName() : player.getName());
+                    out.append(CommandBook.inst().useDisplayNames ? player.getDisplayName(sender) : player.getName(sender));
                     out.append(ChatColor.WHITE);
 
                     first = false;
@@ -256,7 +256,7 @@ public class OnlineListComponent extends BukkitComponent implements Listener {
             // (in case of a filter), and create the list of players.
             for (Player player : online) {
                 // Process the filter
-                if (!player.getName().toLowerCase().contains(filter)) {
+                if (!player.getName(sender).toLowerCase().contains(filter)) {
                     break;
                 }
 
@@ -264,7 +264,7 @@ public class OnlineListComponent extends BukkitComponent implements Listener {
                     out.append(", ");
                 }
 
-                out.append(player.getName());
+                out.append(player.getName(sender));
 
                 first = false;
             }

@@ -36,6 +36,7 @@ import com.zachsthings.libcomponents.bukkit.BukkitComponent;
 import com.zachsthings.libcomponents.config.ConfigurationBase;
 import com.zachsthings.libcomponents.config.ConfigurationNode;
 import com.zachsthings.libcomponents.config.Setting;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -111,17 +112,17 @@ public class MessagingComponent extends BukkitComponent implements Listener {
         UserSession receiverSession = sessions.getSession(UserSession.class, receiver);
         String status = receiverSession.getIdleStatus();
         if (status != null) {
-            sender.sendMessage(config.pmColor + PlayerUtil.toColoredName(receiver, config.pmColor) + " is afk. "
+            sender.sendMessage(config.pmColor + PlayerUtil.toColoredName(receiver, config.pmColor, sender) + " is afk. "
                     + "They might not see your message."
                     + (status.trim().length() == 0 ? "" : " (" + status + ")"));
         }
 
         receiver.sendMessage(config.pmColor + "(From "
-                + PlayerUtil.toColoredName(sender, config.pmColor) + "): "
+                + PlayerUtil.toColoredName(sender, config.pmColor, receiver) + "): "
                 + config.pmTextColor + message);
 
         sender.sendMessage(config.pmColor + "(To "
-                + PlayerUtil.toColoredName(receiver, config.pmColor) + "): "
+                + PlayerUtil.toColoredName(receiver, config.pmColor, sender) + "): "
                 + config.pmTextColor + message);
 
         CommandBook.logger().info("(PM) " + PlayerUtil.toColoredName(sender, ChatColor.RESET) + " -> "
@@ -173,13 +174,12 @@ public class MessagingComponent extends BukkitComponent implements Listener {
                 return;
             }
 
-            String name = PlayerUtil.toColoredName(sender, ChatColor.YELLOW);
             String msg = args.getJoinedStrings(0);
+            BasePlugin.callEvent(new SharedMessageEvent(PlayerUtil.toColoredName(sender, ChatColor.YELLOW) + " " + msg));
 
-            BasePlugin.callEvent(
-                    new SharedMessageEvent(name + " " + msg));
-
-            BasePlugin.server().broadcastMessage("* " + name + " " + msg);
+            for(Player viewer : BasePlugin.server().getOnlinePlayers()) {
+                viewer.sendMessage("* " + PlayerUtil.toColoredName(sender, ChatColor.YELLOW, viewer) + " " + msg);
+            }
         }
 
         @Command(aliases = {"say"}, usage = "<message...>", desc = "Send a message", min = 1, max = -1)
@@ -239,17 +239,17 @@ public class MessagingComponent extends BukkitComponent implements Listener {
 
             if (receiver instanceof Player && sessions.getSession(UserSession.class, receiver).getIdleStatus() != null) {
                 String status = sessions.getSession(UserSession.class, receiver).getIdleStatus();
-                sender.sendMessage(config.pmColor + PlayerUtil.toColoredName(receiver, config.pmColor) + " is afk. "
+                sender.sendMessage(config.pmColor + PlayerUtil.toColoredName(receiver, config.pmColor, sender) + " is afk. "
                         + "They might not see your message."
                         + (status.isEmpty() ? "" : " (" + status + ")"));
             }
 
             receiver.sendMessage(config.pmColor + "(From "
-                    + PlayerUtil.toColoredName(sender, config.pmColor) + "): "
+                    + PlayerUtil.toColoredName(sender, config.pmColor, receiver) + "): "
                     + config.pmTextColor + message);
 
             sender.sendMessage(config.pmColor + "(To "
-                    + PlayerUtil.toColoredName(receiver, config.pmColor) + "): "
+                    + PlayerUtil.toColoredName(receiver, config.pmColor, sender) + "): "
                     + config.pmTextColor + message);
 
             CommandBook.logger().info("(PM) " + PlayerUtil.toColoredName(sender, ChatColor.RESET) + " -> "

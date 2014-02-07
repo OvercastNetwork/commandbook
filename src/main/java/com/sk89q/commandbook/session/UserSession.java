@@ -59,7 +59,7 @@ public class UserSession extends PersistentSession {
 
     public void setLastRecipient(CommandSender target) {
         if (target instanceof Player) {
-            lastRecipient = target.getName();
+            lastRecipient = target.getName(this.getOwner());
         } else {
             lastRecipient = CONSOLE_NAME;
         }

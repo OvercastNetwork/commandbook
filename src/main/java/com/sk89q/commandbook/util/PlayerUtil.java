@@ -84,9 +84,9 @@ public class PlayerUtil {
             filter = filter.substring(1);
 
             for (Player player : players) {
-                if (player.getName().equalsIgnoreCase(filter)
+                if (player.getName(source).equalsIgnoreCase(filter)
                     || (useDisplayNames
-                        && ChatColor.stripColor(player.getDisplayName()).equalsIgnoreCase(filter))) {
+                        && ChatColor.stripColor(player.getDisplayName(source)).equalsIgnoreCase(filter))) {
                     List<Player> list = new ArrayList<Player>();
                     list.add(player);
                     return list;
@@ -101,9 +101,9 @@ public class PlayerUtil {
             List<Player> list = new ArrayList<Player>();
 
             for (Player player : players) {
-                if (player.getName().toLowerCase().contains(filter)
+                if (player.getName(source).toLowerCase().contains(filter)
                     || (useDisplayNames
-                        && ChatColor.stripColor(player.getDisplayName().toLowerCase()).contains(filter))) {
+                        && ChatColor.stripColor(player.getDisplayName(source).toLowerCase()).contains(filter))) {
                     list.add(player);
                 }
             }
@@ -115,9 +115,9 @@ public class PlayerUtil {
             List<Player> list = new ArrayList<Player>();
 
             for (Player player : players) {
-                if (player.getName().toLowerCase().startsWith(filter)
+                if (player.getName(source).toLowerCase().startsWith(filter)
                     || (useDisplayNames
-                        && ChatColor.stripColor(player.getDisplayName().toLowerCase()).startsWith(filter))) {
+                        && ChatColor.stripColor(player.getDisplayName(source).toLowerCase()).startsWith(filter))) {
                     // Do this to maintain the behavior of the deprecated version of this method
                     if (source != null) {
                         if (player.equals(source)) {
@@ -232,9 +232,9 @@ public class PlayerUtil {
             throws CommandException {
         Player[] players = CommandBook.server().getOnlinePlayers();
         for (Player player : players) {
-            if (player.getName().equalsIgnoreCase(filter)
+            if (player.getName(sender).equalsIgnoreCase(filter)
                 || (CommandBook.inst().lookupWithDisplayNames 
-                    && player.getDisplayName().equalsIgnoreCase(filter))) {
+                    && player.getDisplayName(sender).equalsIgnoreCase(filter))) {
                 return player;
             }
         }
@@ -317,10 +317,14 @@ public class PlayerUtil {
      * @return
      */
     public static String toColoredName(CommandSender sender, ChatColor endColor) {
+        return toColoredName(sender, endColor, null);
+    }
+
+    public static String toColoredName(CommandSender sender, ChatColor endColor, CommandSender viewer) {
         if (sender instanceof Player) {
             String name = CommandBook.inst().useDisplayNames
-                    ? ((Player) sender).getDisplayName()
-                    : (sender).getName();
+                    ? ((Player) sender).getDisplayName(viewer)
+                    : (sender).getName(viewer);
             if (endColor != null && name.contains("\u00A7")) {
                 name = name + endColor;
             }
@@ -328,7 +332,7 @@ public class PlayerUtil {
         } else if (sender instanceof ConsoleCommandSender) {
             return "*Console*";
         } else {
-            return sender.getName();
+            return sender.getName(viewer);
         }
     }
 

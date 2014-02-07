@@ -30,6 +30,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
 import com.sk89q.commandbook.CommandBook;
+import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
 
 public class PlayerUtil {
@@ -58,7 +59,21 @@ public class PlayerUtil {
      * @param filter
      * @return
      */
+    @Deprecated
     public static List<Player> matchPlayerNames(String filter) {
+
+        return matchPlayerNames(null, filter);
+    }
+
+    /**
+     * Match player names.
+     *
+     * @param source
+     * @param filter
+     * @return
+     */
+    public static List<Player> matchPlayerNames(CommandSender source, String filter) {
+
         Player[] players = CommandBook.server().getOnlinePlayers();
         boolean useDisplayNames = CommandBook.inst().lookupWithDisplayNames;
 
@@ -70,7 +85,7 @@ public class PlayerUtil {
 
             for (Player player : players) {
                 if (player.getName().equalsIgnoreCase(filter)
-                    || (useDisplayNames 
+                    || (useDisplayNames
                         && ChatColor.stripColor(player.getDisplayName()).equalsIgnoreCase(filter))) {
                     List<Player> list = new ArrayList<Player>();
                     list.add(player);
@@ -87,7 +102,7 @@ public class PlayerUtil {
 
             for (Player player : players) {
                 if (player.getName().toLowerCase().contains(filter)
-                    || (useDisplayNames 
+                    || (useDisplayNames
                         && ChatColor.stripColor(player.getDisplayName().toLowerCase()).contains(filter))) {
                     list.add(player);
                 }
@@ -101,9 +116,18 @@ public class PlayerUtil {
 
             for (Player player : players) {
                 if (player.getName().toLowerCase().startsWith(filter)
-                    || (useDisplayNames 
+                    || (useDisplayNames
                         && ChatColor.stripColor(player.getDisplayName().toLowerCase()).startsWith(filter))) {
-                    list.add(player);
+                    // Do this to maintain the behavior of the deprecated version of this method
+                    if (source != null) {
+                        if (player.equals(source)) {
+                            list.add(player);
+                        } else {
+                            list.add(0, player);
+                        }
+                    } else {
+                        list.add(player);
+                    }
                 }
             }
 
@@ -191,7 +215,7 @@ public class PlayerUtil {
             }
         }
 
-        List<Player> players = matchPlayerNames(filter);
+        List<Player> players = matchPlayerNames(source, filter);
 
         return checkPlayerMatch(players);
     }
@@ -321,5 +345,26 @@ public class PlayerUtil {
         } else {
             return "*Console*";
         }
+    }
+
+    public static Iterable<Player> detectTargets(CommandSender sender, CommandContext args, String perm) throws CommandException {
+        Iterable<Player> targets = new ArrayList<Player>();
+        // Detect targets based on the number of arguments provided
+        if (args.argsLength() == 0) {
+            targets = PlayerUtil.matchPlayers(PlayerUtil.checkPlayer(sender));
+        } else {
+            targets = PlayerUtil.matchPlayers(sender, args.getString(0));
+        }
+        checkPlayerMatch((List<Player>) targets);
+        // Check permissions!
+        for (Player player : targets) {
+            if (player.equals(sender)) {
+                CommandBook.inst().checkPermission(sender, perm);
+            } else {
+                CommandBook.inst().checkPermission(sender, perm + ".other");
+                break;
+            }
+        }
+        return targets;
     }
 }

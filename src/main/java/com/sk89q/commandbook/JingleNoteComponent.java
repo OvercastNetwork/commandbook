@@ -16,16 +16,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.sk89q.jinglenote;
+package com.sk89q.commandbook;
 
-import com.sk89q.commandbook.CommandBook;
-import com.sk89q.commandbook.util.PlayerUtil;
-import com.sk89q.minecraft.util.commands.Command;
-import com.sk89q.minecraft.util.commands.CommandContext;
-import com.sk89q.minecraft.util.commands.CommandException;
-import com.sk89q.minecraft.util.commands.CommandPermissions;
-import com.zachsthings.libcomponents.ComponentInformation;
-import com.zachsthings.libcomponents.bukkit.BukkitComponent;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.logging.Level;
+
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiUnavailableException;
+
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -34,12 +34,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MidiUnavailableException;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.logging.Level;
+import com.sk89q.commandbook.util.PlayerUtil;
+import com.sk89q.jinglenote.JingleNoteManager;
+import com.sk89q.jinglenote.MidiJingleSequencer;
+import com.sk89q.minecraft.util.commands.Command;
+import com.sk89q.minecraft.util.commands.CommandContext;
+import com.sk89q.minecraft.util.commands.CommandException;
+import com.sk89q.minecraft.util.commands.CommandPermissions;
+import com.zachsthings.libcomponents.ComponentInformation;
+import com.zachsthings.libcomponents.bukkit.BukkitComponent;
 
 @ComponentInformation(friendlyName = "JingleNote", desc = "MIDI sequencer for note blocks with commands.")
 public class JingleNoteComponent extends BukkitComponent implements Listener {
@@ -50,7 +53,7 @@ public class JingleNoteComponent extends BukkitComponent implements Listener {
     public void enable() {
         // Jingle note manager
         jingleNoteManager = new JingleNoteManager();
-        
+
         registerCommands(Commands.class);
         CommandBook.registerEvents(this);
     }
@@ -76,8 +79,8 @@ public class JingleNoteComponent extends BukkitComponent implements Listener {
         try {
             File file = new File(CommandBook.inst().getDataFolder(), "intro.mid");
             if (file.exists()) {
-                sequencer = new MidiJingleSequencer(file);
-                getJingleNoteManager().play(event.getPlayer(), sequencer, 2000);
+                sequencer = new MidiJingleSequencer(file, false);
+                getJingleNoteManager().play(event.getPlayer().getName(), sequencer);
             }
         } catch (MidiUnavailableException e) {
             CommandBook.logger().log(Level.WARNING, "Failed to access MIDI: "
@@ -94,7 +97,7 @@ public class JingleNoteComponent extends BukkitComponent implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        getJingleNoteManager().stop(event.getPlayer());
+        getJingleNoteManager().stop(event.getPlayer().getName());
     }
 
     public class Commands {
@@ -110,7 +113,7 @@ public class JingleNoteComponent extends BukkitComponent implements Listener {
             } else {
                 targets = PlayerUtil.matchPlayers(sender, args.getString(0));
             }
-            
+
             for (Player target : targets) {
                 if (target != sender) {
                     CommandBook.inst().checkPermission(sender, "commandbook.intro.other");
@@ -119,10 +122,9 @@ public class JingleNoteComponent extends BukkitComponent implements Listener {
             }
 
             try {
-                MidiJingleSequencer sequencer = new MidiJingleSequencer(
-                        new File(CommandBook.inst().getDataFolder(), "intro.mid"));
+                MidiJingleSequencer sequencer = new MidiJingleSequencer(new File(CommandBook.inst().getDataFolder(), "intro.mid"), false);
                 for (Player player : targets) {
-                    getJingleNoteManager().play(player, sequencer, 0);
+                    getJingleNoteManager().play(player.getName(), sequencer);
                     player.sendMessage(ChatColor.YELLOW + "Playing intro.midi...");
                 }
             } catch (MidiUnavailableException e) {
@@ -159,7 +161,7 @@ public class JingleNoteComponent extends BukkitComponent implements Listener {
 
             if (args.argsLength() == 0) {
                 for (Player target : targets) {
-                    if (getJingleNoteManager().stop(target)) {
+                    if (getJingleNoteManager().stop(target.getName())) {
                         target.sendMessage(ChatColor.YELLOW + "All music stopped.");
                     }
                 }
@@ -197,9 +199,9 @@ public class JingleNoteComponent extends BukkitComponent implements Listener {
             }
 
             try {
-                MidiJingleSequencer sequencer = new MidiJingleSequencer(file);
+                MidiJingleSequencer sequencer = new MidiJingleSequencer(file, false);
                 for (Player player : targets) {
-                    getJingleNoteManager().play(player, sequencer, 0);
+                    getJingleNoteManager().play(player.getName(), sequencer);
                     player.sendMessage(ChatColor.YELLOW + "Playing " + file.getName()
                             + "... Use '/midi' to stop.");
                 }

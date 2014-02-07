@@ -82,8 +82,16 @@ public class TeleportSession extends PersistentSession {
     }
 
     public void rememberLocation(Location location) {
-        if (locationHistory.size() > 0 && locationHistory.peek().equals(location)) {
+        if (location == null) {
             return;
+        }
+
+        // Skip locations which are essentially teleport jitter
+        if (locationHistory.size() > 0) {
+            Location lastLoc = locationHistory.peek().clone();
+            if (lastLoc.getWorld().equals(location.getWorld()) && lastLoc.distanceSquared(location) <= 2) {
+                return;
+            }
         }
 
         locationHistory.add(0, location);

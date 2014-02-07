@@ -1,89 +1,78 @@
-// $Id$
 /*
- * Tetsuuuu plugin for SK's Minecraft Server
- * Copyright (C) 2010 sk89q <http://www.sk89q.com>
- * All rights reserved.
-*/
+ * CommandBook
+ * Copyright (C) 2011 sk89q <http://www.sk89q.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 package com.sk89q.jinglenote;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
-import com.sk89q.worldedit.blocks.BlockType;
+import com.sk89q.jinglenote.bukkit.BukkitJingleNotePlayer;
 
 /**
  * A manager of play instances.
- * 
+ *
  * @author sk89q
  */
 public class JingleNoteManager {
+
     /**
      * List of instances.
      */
-    protected final Map<String, JingleNotePlayer> instances
-            = new HashMap<String, JingleNotePlayer>();
-    
-    public void play(Player player, JingleSequencer sequencer, int delay) {
-        String name = player.getName();
-        Location loc = findLocation(player);
-        
+    protected final Map<String, JingleNotePlayer> instances = new HashMap<String, JingleNotePlayer>();
+
+    public void play(String player, JingleSequencer sequencer) {
+
         // Existing player found!
-        if (instances.containsKey(name)) {
-            JingleNotePlayer existing = instances.get(name);
-            Location existingLoc = existing.getLocation();
-            
-            existing.stop(
-                    existingLoc.getBlockX() == loc.getBlockX()
-                    && existingLoc.getBlockY() == loc.getBlockY()
-                    && existingLoc.getBlockZ() == loc.getBlockZ());
-            
-            instances.remove(name);
+        if (instances.containsKey(player)) {
+            JingleNotePlayer existing = instances.get(player);
+            existing.stop();
+            instances.remove(player);
         }
-        
-        JingleNotePlayer notePlayer = new JingleNotePlayer(player, loc, sequencer, delay);
+
+        JingleNotePlayer notePlayer = new BukkitJingleNotePlayer(player, sequencer);
         Thread thread = new Thread(notePlayer);
-        thread.setName("JingleNotePlayer for " + player.getName());
+        thread.setDaemon(true);
+        thread.setPriority(Thread.MAX_PRIORITY);
+        thread.setName("JingleNotePlayer for " + player);
         thread.start();
-        
-        instances.put(name, notePlayer);
+
+        instances.put(player, notePlayer);
     }
-    
-    public boolean stop(Player player) {
-        String name = player.getName();
-        
+
+    public boolean stop(String player) {
+
         // Existing player found!
-        if (instances.containsKey(name)) {
-            JingleNotePlayer existing = instances.get(name);
-            existing.stop(false);
-            instances.remove(name);
+        if (instances.containsKey(player)) {
+            JingleNotePlayer existing = instances.get(player);
+            existing.stop();
+            instances.remove(player);
             return true;
         }
         return false;
     }
-    
+
     public void stopAll() {
+
         for (JingleNotePlayer notePlayer : instances.values()) {
-            notePlayer.stop(false);
+            notePlayer.stop();
         }
-        
+
         instances.clear();
-    }
-    
-    private Location findLocation(Player player) {
-        World world = player.getWorld();
-        Location loc = player.getLocation();
-        loc.setY(loc.getY() - 2);
-        
-        if (!BlockType.canPassThrough(world.getBlockTypeIdAt(loc))) {
-            return loc;
-        }
-        
-        loc.setY(loc.getY() + 4);
-        
-        return loc;
     }
 }

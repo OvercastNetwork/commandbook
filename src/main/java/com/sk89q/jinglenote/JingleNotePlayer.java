@@ -1,61 +1,55 @@
-// $Id$
 /*
- * Tetsuuuu plugin for SK's Minecraft Server
- * Copyright (C) 2010 sk89q <http://www.sk89q.com>
- * All rights reserved.
-*/
+ * CommandBook
+ * Copyright (C) 2011 sk89q <http://www.sk89q.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package com.sk89q.jinglenote;
 
-import com.sk89q.commandbook.CommandBook;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
+import com.sk89q.jinglenote.JingleSequencer.Note;
 
-public class JingleNotePlayer implements Runnable {
-    protected final Player player;
-    protected final Location loc;
+public abstract class JingleNotePlayer implements Runnable {
+
+    protected final String player;
     protected JingleSequencer sequencer;
-    protected final int delay;
-    
-    protected boolean keepMusicBlock = false;
-    
-    public JingleNotePlayer(Player player,
-            Location loc, JingleSequencer seq,  int delay) {
+
+    /**
+     * Constructs a new JingleNotePlayer
+     * 
+     * @param player The player who is hearing this's name.
+     * @param seq The JingleSequencer to play.
+     * @param area The SearchArea for this player. (optional)
+     */
+    public JingleNotePlayer(String player, JingleSequencer seq) {
         this.player = player;
-        this.loc = loc;
-        this.sequencer = seq;
-        this.delay = delay;
+        sequencer = seq;
     }
-    
+
+    @Override
     public void run() {
+
+        if(sequencer == null)
+            return;
         try {
-            if (delay > 0) {
-                Thread.sleep(delay);
-            }
-            
-            // Create a fake note block
-            player.sendBlockChange(loc, 25, (byte) 0);
-            Thread.sleep(100);
-            
             try {
                 sequencer.run(this);
             } catch (Throwable t) {
                 t.printStackTrace();
             }
-            
+
             Thread.sleep(500);
-            
-            if (!keepMusicBlock) {
-                // Restore music block
-                CommandBook.server().getScheduler().scheduleSyncDelayedTask(CommandBook.inst(), new Runnable() {
-                    
-                    public void run() {
-                        int prevId = player.getWorld().getBlockTypeIdAt(loc);
-                        byte prevData = player.getWorld().getBlockAt(loc).getData();
-                        player.sendBlockChange(loc, prevId, prevData);
-                    }
-                });
-            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
@@ -63,32 +57,16 @@ public class JingleNotePlayer implements Runnable {
             sequencer = null;
         }
     }
-    
-    public boolean isActive() {
-        return player.isOnline();
-    }
-    
-    public Player getPlayer() {
+
+    public String getPlayer() {
         return player;
     }
 
-    public Location getLocation() {
-        return loc;
-    }
-
-    public void stop(boolean keepMusicBlock) {
-        this.keepMusicBlock = keepMusicBlock;
-        
+    public void stop() {
         if (sequencer != null) {
             sequencer.stop();
         }
     }
-    
-    public void play(byte instrument, byte note) {
-        if (!player.isOnline()) {
-            return;
-        }
-        
-        player.playNote(loc, instrument, note);
-    }
+
+    public abstract void play(Note note);
 }
